@@ -1,29 +1,6 @@
 # Cricket Intelligence System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Code style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 > Learning when to use SQL vs Vector DB through a practical cricket analytics system
-
-## 🎯 Quick Start
-
-```bash
-# Clone and setup
-git clone https://github.com/yourusername/cricket-intelligence-system.git
-cd cricket-intelligence-system
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up environment
-cp .env.example .env  # Add your GNews API key
-
-# Run the MCP server
-python -m mcp_server.main
-```
-
-See [INSTALLATION.md](INSTALLATION.md) for detailed setup.
 
 ## What We're Building
 
@@ -153,45 +130,6 @@ Most tutorials force you into one paradigm. This project shows:
 - **Each has its strengths** - use the right tool for the right query
 
 **The right tool for the right job**, orchestrated intelligently by LLMs.
-
-## Project Structure
-
-```
-cricket-intelligence-system/
-├── data/                    # Data layer
-│   ├── bronze/             # Raw data
-│   └── silver/             # Cleaned, standardized data
-├── mcp_server/             # MCP server implementation
-│   ├── tools/              # Tool implementations
-│   │   ├── cricket_stats.py
-│   │   └── cricket_news.py
-│   ├── utils/              # Shared utilities
-│   │   ├── embedder.py
-│   │   ├── chromadb_manager.py
-│   │   └── news_fetcher.py
-│   └── main.py             # Server entry point
-├── tests/                  # Test suite
-├── requirements.txt        # Python dependencies
-├── .gitignore             # Git ignore rules
-├── LICENSE                # MIT License
-├── INSTALLATION.md        # Setup guide
-├── CONTRIBUTING.md        # Contribution guidelines
-└── README.md              # This file
-```
-
-## Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Support
-
-- 📖 **Documentation**: See [INSTALLATION.md](INSTALLATION.md)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/yourusername/cricket-intelligence-system/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/cricket-intelligence-system/discussions)
 
 ---
 
