@@ -40,17 +40,12 @@ env/
 .env
 .env.local
 
-# Data files
-data/bronze/*
-!data/bronze/.gitkeep
-data/silver/*
-!data/silver/.gitkeep
-*.db
-*.duckdb
-
-# ChromaDB
-chroma_data/
-.chroma/
+# Data files - exclude all data (raw files and databases)
+data/*
+!data/.gitkeep
+data/csv_data/.gitkeep
+data/duck_db/.gitkeep
+data/chroma_db/.gitkeep
 
 # Logs & Cache
 *.log
