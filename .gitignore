@@ -42,10 +42,6 @@ env/
 
 # Data files - exclude all data (raw files and databases)
 data/*
-!data/.gitkeep
-data/csv_data/.gitkeep
-data/duck_db/.gitkeep
-data/chroma_db/.gitkeep
 
 # Logs & Cache
 *.log
