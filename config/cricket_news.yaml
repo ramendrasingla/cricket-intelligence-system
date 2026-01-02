@@ -1,0 +1,35 @@
+# Cricket Configuration for GNews API Queries
+# Focus: International cricket only (no IPL/club matches)
+
+keywords:
+  # Base cricket queries
+  - "cricket AND (international OR Test OR ODI OR T20)"
+  - "cricket AND (World Cup OR championship OR series)"
+
+  # Major cricket nations
+  - "India cricket"
+  - "Australia cricket"
+  - "England cricket"
+  - "Pakistan cricket"
+  - "South Africa cricket"
+  - "New Zealand cricket"
+
+  # Major tournaments (excluding IPL)
+  - "cricket World Cup"
+  - "T20 World Cup"
+  - "ODI World Cup"
+  - "Test Championship"
+  - "Ashes series"
+
+# Exclude patterns (for filtering, not used in API)
+exclude:
+  - "IPL"
+  - "Indian Premier League"
+  - "Big Bash"
+  - "County cricket"
+
+# GNews API settings
+gnews:
+  language: "en"
+  max_results: 100  # Max per query
+  country: null  # Any country (international focus)
