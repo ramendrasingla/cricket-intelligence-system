@@ -19,7 +19,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from api.mcp_tools.cricket_stats_tools import (
+from cricket_intelligence.api.tools.stats_tools import (
     get_database_schema,
     execute_sql,
     get_sample_queries

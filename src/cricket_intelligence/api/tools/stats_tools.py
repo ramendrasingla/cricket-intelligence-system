@@ -10,17 +10,20 @@ Tools:
 3. get_sample_queries - Get example queries for reference
 """
 
-import sys
-from pathlib import Path
 from typing import Optional
 import duckdb
 import sqlparse
 from sqlparse.sql import Statement
 from sqlparse.tokens import Keyword, DML, DDL
 
-# Paths
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-SILVER_DB = PROJECT_ROOT / "data" / "duck_db" / "silver" / "cricket_stats.duckdb"
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
+
+# Setup logging
+logger = get_logger(__name__)
+
+# Database path from config
+SILVER_DB = settings.silver_db_path
 
 
 def _is_safe_sql(sql: str) -> tuple[bool, str]:

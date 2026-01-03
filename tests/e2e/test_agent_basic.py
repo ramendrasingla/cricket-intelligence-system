@@ -8,6 +8,7 @@ Tests the full agent flow: MCP connection → Query → Response
 import os
 import sys
 import asyncio
+import pytest
 from pathlib import Path
 
 # Add project root to path
@@ -18,13 +19,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+@pytest.mark.asyncio
 async def test_agent_initialization():
     """Test agent can be created and initialized"""
     print("\n" + "="*60)
     print("Test 1: Agent Initialization")
     print("="*60)
 
-    from agent.cricket_agent import CricketAgent
+    from cricket_intelligence.agent.cricket_agent import CricketAgent
 
     agent = CricketAgent()
     print("✓ Agent created")
@@ -38,13 +40,14 @@ async def test_agent_initialization():
     return True
 
 
+@pytest.mark.asyncio
 async def test_sql_query():
     """Test SQL-based cricket stats query"""
     print("\n" + "="*60)
     print("Test 2: SQL Stats Query")
     print("="*60)
 
-    from agent.cricket_agent import CricketAgent
+    from cricket_intelligence.agent.cricket_agent import CricketAgent
 
     agent = CricketAgent()
     await agent.initialize()
@@ -71,13 +74,14 @@ async def test_sql_query():
     return True
 
 
+@pytest.mark.asyncio
 async def test_news_query():
     """Test news search query"""
     print("\n" + "="*60)
     print("Test 3: News Search Query")
     print("="*60)
 
-    from agent.cricket_agent import CricketAgent
+    from cricket_intelligence.agent.cricket_agent import CricketAgent
 
     agent = CricketAgent()
     await agent.initialize()

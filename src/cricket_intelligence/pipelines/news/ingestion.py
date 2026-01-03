@@ -9,25 +9,21 @@ Usage:
     python data_pipelines/news/ingest.py --max 100 --from-date 2024-01-01T00:00:00Z
 """
 
-import os
-import sys
 import argparse
 import yaml
 from datetime import datetime
-from dotenv import load_dotenv
 
-# Add project root to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from cricket_intelligence.core.embeddings import embed_batch
+from cricket_intelligence.core.chromadb import get_collection, add_articles, get_count
+from cricket_intelligence.core.news_client import fetch_news
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
 
-from utils.embedder import embed_batch
-from utils.chromadb_manager import get_collection, add_articles, get_count
-from utils.news_fetcher import fetch_news
-
-# Load environment
-load_dotenv()
+# Setup logging
+logger = get_logger(__name__)
 
 # Config
-CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "config", "cricket_news.yaml")
+CONFIG_PATH = settings.cricket_news_config
 
 
 

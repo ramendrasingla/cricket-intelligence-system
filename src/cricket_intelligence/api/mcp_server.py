@@ -6,8 +6,8 @@ MCP server that exposes atomic cricket data tools.
 LLM orchestrates these tools for intelligent querying.
 
 Architecture:
-- cricket_news_tools.py: ChromaDB + GNews API tools
-- cricket_stats_tools.py: DuckDB SQL tools
+- news_tools.py: ChromaDB + GNews API tools
+- stats_tools.py: DuckDB SQL tools
 - mcp_server.py: MCP server definitions and routing
 
 Tools:
@@ -21,29 +21,22 @@ Usage:
 import json
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
 
 from mcp.server import Server
 from mcp.types import Tool, TextContent
 import mcp.server.stdio
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
 # Import tool implementations
-from api.mcp_tools.cricket_news_tools import (
+from cricket_intelligence.api.tools.news_tools import (
     search_chromadb,
     query_cricket_articles
 )
-from api.mcp_tools.cricket_stats_tools import (
+from cricket_intelligence.api.tools.stats_tools import (
     get_database_schema,
     execute_sql,
     get_sample_queries
 )
-
-# Load environment
-load_dotenv()
+from cricket_intelligence.config import settings
 
 # Initialize MCP server
 app = Server("cricket-query-server")

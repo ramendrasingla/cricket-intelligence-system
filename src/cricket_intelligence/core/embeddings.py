@@ -7,9 +7,20 @@ Model: all-MiniLM-L6-v2 (384 dimensions)
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-# Load model once (global)
-MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+from cricket_intelligence.config import settings
+
 EMBEDDING_DIM = 384
+
+# Lazy loading to avoid loading model at import time
+_MODEL = None
+
+
+def _get_model() -> SentenceTransformer:
+    """Get or create the sentence transformer model (lazy loading)"""
+    global _MODEL
+    if _MODEL is None:
+        _MODEL = SentenceTransformer(settings.embedding_model)
+    return _MODEL
 
 
 def embed_text(text: str) -> np.ndarray:
@@ -21,7 +32,8 @@ def embed_text(text: str) -> np.ndarray:
     if not text or not text.strip():
         return np.zeros(EMBEDDING_DIM)
 
-    return MODEL.encode(text, convert_to_numpy=True)
+    model = _get_model()
+    return model.encode(text, convert_to_numpy=True)
 
 
 def embed_batch(texts: list[str]) -> np.ndarray:
@@ -33,7 +45,8 @@ def embed_batch(texts: list[str]) -> np.ndarray:
     if not texts:
         return np.array([])
 
-    return MODEL.encode(texts, convert_to_numpy=True)
+    model = _get_model()
+    return model.encode(texts, convert_to_numpy=True)
 
 
 def embed_article(article: dict) -> np.ndarray:

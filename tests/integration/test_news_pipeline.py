@@ -20,9 +20,9 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from utils.news_fetcher import fetch_news
-from utils.embedder import embed_text, embed_batch
-from utils.chromadb_manager import get_collection, add_articles, search, get_count
+from cricket_intelligence.core.news_client import fetch_news
+from cricket_intelligence.core.embeddings import embed_text, embed_batch
+from cricket_intelligence.core.chromadb import get_collection, add_articles, search, get_count
 
 # Load environment
 load_dotenv()

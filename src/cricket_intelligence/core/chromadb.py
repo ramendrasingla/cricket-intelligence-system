@@ -6,21 +6,24 @@ Store and search news articles with embeddings
 
 import chromadb
 from chromadb.config import Settings
-import os
 
-# Paths
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "chroma_db")
-COLLECTION_NAME = "cricket_news_articles"
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
+
+# Setup logging
+logger = get_logger(__name__)
 
 
 def get_client():
     """Get ChromaDB client (creates DB directory if needed)"""
-    os.makedirs(DB_PATH, exist_ok=True)
+    db_path = settings.chroma_db_path
+    db_path.mkdir(parents=True, exist_ok=True)
 
     client = chromadb.PersistentClient(
-        path=DB_PATH,
+        path=str(db_path),
         settings=Settings(anonymized_telemetry=False)
     )
+    logger.debug(f"ChromaDB client initialized at {db_path}")
     return client
 
 
@@ -30,7 +33,7 @@ def get_collection(client=None):
         client = get_client()
 
     collection = client.get_or_create_collection(
-        name=COLLECTION_NAME,
+        name=settings.chroma_collection_name,
         metadata={"description": "Cricket news articles"}
     )
     return collection

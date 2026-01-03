@@ -12,40 +12,44 @@ Usage:
 """
 
 import duckdb
-from pathlib import Path
 
-# Paths
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-BRONZE_DB = PROJECT_ROOT / "data" / "duck_db" / "bronze" / "cricket_stats.duckdb"
-SILVER_DB = PROJECT_ROOT / "data" / "duck_db" / "silver" / "cricket_stats.duckdb"
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
+
+# Setup logging
+logger = get_logger(__name__)
+
+# Paths from config
+BRONZE_DB = settings.project_root / "data" / "duck_db" / "bronze" / "cricket_stats.duckdb"
+SILVER_DB = settings.silver_db_path
 
 
 def transform_to_silver():
     """Transform Bronze to Silver layer with clean schema"""
 
-    print("=" * 60)
-    print("Test Cricket Bronze → Silver Transformation")
-    print("=" * 60)
+    logger.info("=" * 60)
+    logger.info("Test Cricket Bronze → Silver Transformation")
+    logger.info("=" * 60)
 
     # Check Bronze DB exists
     if not BRONZE_DB.exists():
-        print(f"Error: Bronze database not found at {BRONZE_DB}")
-        print("Please run data_pipelines/cricket_stats/ingest_bronze.py first")
+        logger.info(f"Error: Bronze database not found at {BRONZE_DB}")
+        logger.info("Please run data_pipelines/cricket_stats/ingest_bronze.py first")
         return
 
     # Connect to Bronze (read-only)
-    print(f"\nReading from Bronze: {BRONZE_DB}")
+    logger.info(f"\nReading from Bronze: {BRONZE_DB}")
     bronze_conn = duckdb.connect(str(BRONZE_DB), read_only=True)
 
     # Connect to Silver (create/overwrite)
-    print(f"Writing to Silver: {SILVER_DB}")
+    logger.info(f"Writing to Silver: {SILVER_DB}")
     silver_conn = duckdb.connect(str(SILVER_DB))
 
     # Attach Bronze DB to access it from Silver
     silver_conn.execute(f"ATTACH '{BRONZE_DB}' AS bronze (READ_ONLY)")
 
     # Drop existing Silver tables
-    print("\nDropping existing Silver tables...")
+    logger.info("\nDropping existing Silver tables...")
     silver_conn.execute("DROP TABLE IF EXISTS partnerships")
     silver_conn.execute("DROP TABLE IF EXISTS fall_of_wickets")
     silver_conn.execute("DROP TABLE IF EXISTS bowling")
@@ -54,7 +58,7 @@ def transform_to_silver():
     silver_conn.execute("DROP TABLE IF EXISTS players")
 
     # Transform Players
-    print("\n1. Transforming players table...")
+    logger.info("\n1. Transforming players table...")
     silver_conn.execute("""
         CREATE TABLE players AS
         SELECT
@@ -70,10 +74,10 @@ def transform_to_silver():
     """)
 
     count = silver_conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
-    print(f"   Created players table: {count:,} rows")
+    logger.info(f"   Created players table: {count:,} rows")
 
     # Transform Matches
-    print("\n2. Transforming matches table...")
+    logger.info("\n2. Transforming matches table...")
     silver_conn.execute("""
         CREATE TABLE matches AS
         SELECT
@@ -102,10 +106,10 @@ def transform_to_silver():
     """)
 
     count = silver_conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
-    print(f"   Created matches table: {count:,} rows")
+    logger.info(f"   Created matches table: {count:,} rows")
 
     # Transform Batting Performances
-    print("\n3. Transforming batting performances...")
+    logger.info("\n3. Transforming batting performances...")
     silver_conn.execute("""
         CREATE TABLE batting AS
         SELECT
@@ -126,10 +130,10 @@ def transform_to_silver():
     """)
 
     count = silver_conn.execute("SELECT COUNT(*) FROM batting").fetchone()[0]
-    print(f"   Created batting table: {count:,} rows")
+    logger.info(f"   Created batting table: {count:,} rows")
 
     # Transform Bowling Performances
-    print("\n4. Transforming bowling performances...")
+    logger.info("\n4. Transforming bowling performances...")
     silver_conn.execute("""
         CREATE TABLE bowling AS
         SELECT
@@ -147,7 +151,7 @@ def transform_to_silver():
     """)
 
     count = silver_conn.execute("SELECT COUNT(*) FROM bowling").fetchone()[0]
-    print(f"   Created bowling table: {count:,} rows")
+    logger.info(f"   Created bowling table: {count:,} rows")
 
     # Transform Fall of Wickets (if exists)
     fow_exists = bronze_conn.execute("""
@@ -156,7 +160,7 @@ def transform_to_silver():
     """).fetchone()[0] > 0
 
     if fow_exists:
-        print("\n5. Transforming fall of wickets...")
+        logger.info("\n5. Transforming fall of wickets...")
         silver_conn.execute("""
             CREATE TABLE fall_of_wickets AS
             SELECT
@@ -171,7 +175,7 @@ def transform_to_silver():
         """)
 
         count = silver_conn.execute("SELECT COUNT(*) FROM fall_of_wickets").fetchone()[0]
-        print(f"   Created fall_of_wickets table: {count:,} rows")
+        logger.info(f"   Created fall_of_wickets table: {count:,} rows")
 
     # Transform Partnerships (if exists)
     part_exists = bronze_conn.execute("""
@@ -180,7 +184,7 @@ def transform_to_silver():
     """).fetchone()[0] > 0
 
     if part_exists:
-        print("\n6. Transforming partnerships...")
+        logger.info("\n6. Transforming partnerships...")
         silver_conn.execute("""
             CREATE TABLE partnerships AS
             SELECT
@@ -201,10 +205,10 @@ def transform_to_silver():
         """)
 
         count = silver_conn.execute("SELECT COUNT(*) FROM partnerships").fetchone()[0]
-        print(f"   Created partnerships table: {count:,} rows")
+        logger.info(f"   Created partnerships table: {count:,} rows")
 
     # Create indexes
-    print("\n7. Creating indexes...")
+    logger.info("\n7. Creating indexes...")
     silver_conn.execute("CREATE INDEX idx_players_id ON players(player_id)")
     silver_conn.execute("CREATE INDEX idx_players_name ON players(name)")
     silver_conn.execute("CREATE INDEX idx_matches_id ON matches(match_id)")
@@ -220,7 +224,7 @@ def transform_to_silver():
     if part_exists:
         silver_conn.execute("CREATE INDEX idx_part_match ON partnerships(match_id)")
 
-    print("   Indexes created")
+    logger.info("   Indexes created")
 
     # Get final stats
     player_count = silver_conn.execute("SELECT COUNT(*) FROM players").fetchone()[0]
@@ -229,23 +233,23 @@ def transform_to_silver():
     bowling_count = silver_conn.execute("SELECT COUNT(*) FROM bowling").fetchone()[0]
 
     # Final summary
-    print("\n" + "=" * 60)
-    print("Transformation Complete!")
-    print("=" * 60)
-    print(f"Silver Database: {SILVER_DB}")
-    print(f"\nTable Statistics:")
-    print(f"  Players: {player_count:,}")
-    print(f"  Matches: {match_count:,}")
-    print(f"  Batting records: {batting_count:,}")
-    print(f"  Bowling records: {bowling_count:,}")
+    logger.info("\n" + "=" * 60)
+    logger.info("Transformation Complete!")
+    logger.info("=" * 60)
+    logger.info(f"Silver Database: {SILVER_DB}")
+    logger.info(f"\nTable Statistics:")
+    logger.info(f"  Players: {player_count:,}")
+    logger.info(f"  Matches: {match_count:,}")
+    logger.info(f"  Batting records: {batting_count:,}")
+    logger.info(f"  Bowling records: {bowling_count:,}")
 
     if fow_exists:
         fow_count = silver_conn.execute("SELECT COUNT(*) FROM fall_of_wickets").fetchone()[0]
-        print(f"  Fall of wickets: {fow_count:,}")
+        logger.info(f"  Fall of wickets: {fow_count:,}")
 
     if part_exists:
         part_count = silver_conn.execute("SELECT COUNT(*) FROM partnerships").fetchone()[0]
-        print(f"  Partnerships: {part_count:,}")
+        logger.info(f"  Partnerships: {part_count:,}")
 
     # Close connections
     bronze_conn.close()
@@ -257,15 +261,15 @@ if __name__ == "__main__":
     transform_to_silver()
 
     # Test query on Silver layer
-    print("\n" + "=" * 60)
-    print("Running Test Query on Silver Layer")
-    print("=" * 60)
+    logger.info("\n" + "=" * 60)
+    logger.info("Running Test Query on Silver Layer")
+    logger.info("=" * 60)
 
     conn = duckdb.connect(str(SILVER_DB))
 
     # Query: Best partnership from away team in most recent IND vs AUS match in Australia
-    print("\nQuery: Best Partnership (Away Team) - Most Recent IND vs AUS in Australia")
-    print("-" * 60)
+    logger.info("\nQuery: Best Partnership (Away Team) - Most Recent IND vs AUS in Australia")
+    logger.info("-" * 60)
 
     # Find most recent India vs Australia match in Australia
     match_result = conn.execute("""
@@ -289,9 +293,9 @@ if __name__ == "__main__":
         match_id, date, team1, team2, stadium, country = match_result
         away_team = 'India'  # India is away in Australia
 
-        print(f"Match: {team1} vs {team2} on {date}")
-        print(f"Venue: {stadium}, {country}")
-        print(f"Away Team: {away_team}\n")
+        logger.info(f"Match: {team1} vs {team2} on {date}")
+        logger.info(f"Venue: {stadium}, {country}")
+        logger.info(f"Away Team: {away_team}\n")
 
         # Find best partnership
         partnership_result = conn.execute("""
@@ -315,23 +319,23 @@ if __name__ == "__main__":
             player1_name = conn.execute("SELECT name FROM players WHERE player_id = ?", [bat1]).fetchone()
             player2_name = conn.execute("SELECT name FROM players WHERE player_id = ?", [bat2]).fetchone()
 
-            print(f"Best Partnership (Innings {innings}):")
+            logger.info(f"Best Partnership (Innings {innings}):")
             if player1_name:
-                print(f"  Player 1: {player1_name[0]} (ID: {bat1})")
+                logger.info(f"  Player 1: {player1_name[0]} (ID: {bat1})")
             else:
-                print(f"  Player 1 ID: {bat1}")
+                logger.info(f"  Player 1 ID: {bat1}")
 
             if player2_name:
-                print(f"  Player 2: {player2_name[0]} (ID: {bat2})")
+                logger.info(f"  Player 2: {player2_name[0]} (ID: {bat2})")
             else:
-                print(f"  Player 2 ID: {bat2}")
+                logger.info(f"  Player 2 ID: {bat2}")
 
-            print(f"  Runs: {runs}")
-            print(f"  Balls: {balls}")
+            logger.info(f"  Runs: {runs}")
+            logger.info(f"  Balls: {balls}")
         else:
-            print("No partnership data found for this match")
+            logger.info("No partnership data found for this match")
     else:
-        print("No India vs Australia match found in Australia")
+        logger.info("No India vs Australia match found in Australia")
 
     conn.close()
-    print("\nTest query completed successfully!")
+    logger.info("\nTest query completed successfully!")

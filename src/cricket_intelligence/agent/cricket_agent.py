@@ -10,18 +10,19 @@ from pathlib import Path
 from typing import Literal, Annotated
 from operator import add
 
-from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.prebuilt import ToolNode
 
-from agent.mcp_client import MCPClientManager
-from agent.insight_generator import InsightGenerator
-from agent.schemas import CricketInsight
+from cricket_intelligence.agent.mcp_client import MCPClientManager
+from cricket_intelligence.agent.insight_generator import InsightGenerator
+from cricket_intelligence.agent.schemas import CricketInsight
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
 
-# Load environment
-load_dotenv()
+# Setup logging
+logger = get_logger(__name__)
 
 
 # ===== Agent State =====
@@ -46,11 +47,10 @@ class CricketAgent:
 
     async def initialize(self):
         """Initialize MCP connection and build LangGraph"""
-        print("\n🏏 Initializing Cricket Intelligence Agent...")
+        logger.info("Initializing Cricket Intelligence Agent...")
 
         # Initialize MCP client
-        project_root = Path(__file__).parent.parent
-        server_script = str(project_root / "api" / "mcp_server.py")
+        server_script = str(settings.project_root / "src" / "cricket_intelligence" / "api" / "mcp_server.py")
 
         self.mcp_client = MCPClientManager(server_script)
         await self.mcp_client.initialize()
@@ -58,14 +58,13 @@ class CricketAgent:
         self.tools = self.mcp_client.get_tools()
 
         # Initialize LLM
-        api_key = os.getenv("OPENAI_API")
-        if not api_key:
+        if not settings.openai_api_key:
             raise ValueError("OPENAI_API not found in environment")
 
         self.llm = ChatOpenAI(
-            model="gpt-4o-mini",
-            temperature=0,
-            api_key=api_key
+            model=settings.llm_model,
+            temperature=settings.llm_temperature,
+            api_key=settings.openai_api_key
         )
 
         # Initialize insight generator
@@ -74,7 +73,7 @@ class CricketAgent:
         # Build LangGraph
         self._build_graph()
 
-        print("✓ Agent initialized and ready\n")
+        logger.info("Agent initialized and ready")
 
     def _build_graph(self):
         """Build the LangGraph workflow"""

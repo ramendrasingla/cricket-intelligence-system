@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from api.mcp_tools.cricket_news_tools import search_chromadb, query_cricket_articles
-from utils.chromadb_manager import get_collection, get_count
+from cricket_intelligence.api.tools.news_tools import search_chromadb, query_cricket_articles
+from cricket_intelligence.core.chromadb import get_collection, get_count
 
 # Load environment
 load_dotenv()

@@ -9,17 +9,14 @@ Tools:
 2. query_cricket_articles - Query GNews API and auto-ingest to ChromaDB
 """
 
-import os
-import sys
-from pathlib import Path
+from cricket_intelligence.core.embeddings import embed_text, embed_batch
+from cricket_intelligence.core.chromadb import get_collection, search, add_articles
+from cricket_intelligence.core.news_client import fetch_news
+from cricket_intelligence.config import settings
+from cricket_intelligence.logging_config import get_logger
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
-from utils.embedder import embed_text, embed_batch
-from utils.chromadb_manager import get_collection, search, add_articles
-from utils.news_fetcher import fetch_news
+# Setup logging
+logger = get_logger(__name__)
 
 
 def search_chromadb(query: str, top_k: int = 5) -> dict:
@@ -61,9 +58,9 @@ def query_cricket_articles(query: str, max_articles: int = 10) -> dict:
     Returns:
         Dict with query, articles_count, articles_added, and articles
     """
-    api_key = os.getenv("GNEWS_API")
+    api_key = settings.gnews_api_key
     if not api_key:
-        return {"error": "GNEWS_API environment variable not set"}
+        return {"error": "GNEWS_API_KEY environment variable not set"}
 
     # Use generic news fetcher with cricket-specific query
     cricket_query = f"cricket AND ({query})"
