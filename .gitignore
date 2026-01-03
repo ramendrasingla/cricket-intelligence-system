@@ -40,8 +40,11 @@ env/
 .env
 .env.local
 
-# Data files - exclude all data (raw files and databases)
+# Data files - exclude databases but keep source CSVs for easy onboarding
 data/*
+!data/csv_data/
+!data/csv_data/*.csv
+!data/.gitkeep
 
 # Logs & Cache
 *.log
