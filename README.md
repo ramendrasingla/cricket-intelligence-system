@@ -1,136 +1,163 @@
 # Cricket Intelligence System
 
-> Learning when to use SQL vs Vector DB through a practical cricket analytics system
+![LangGraph](https://img.shields.io/badge/LangGraph-Agent-blue) ![OpenAI](https://img.shields.io/badge/GPT--4o--mini-LLM-green) ![DuckDB](https://img.shields.io/badge/DuckDB-SQL-yellow) ![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector-purple) ![GNews](https://img.shields.io/badge/GNews-API-orange) ![Sentence Transformers](https://img.shields.io/badge/all--MiniLM--L6--v2-Embeddings-red) ![Pydantic](https://img.shields.io/badge/Pydantic-Settings-lightgrey) ![pytest](https://img.shields.io/badge/pytest-Testing-blue)
 
-## What We're Building
+As an engineer, I wanted to understand **when to use what data stack**. Text-to-SQL? Vector DB? Knowledge Graphs (coming soon)?
 
-A **multi-data-source intelligence system** that demonstrates when and why to use different data storage and retrieval methods. Instead of forcing everything into one paradigm (SQL or vector search), this project shows how they complement each other for different query types.
+Everyone talks about MCP (Model Context Protocol), but I needed to build something real to see how it works. The goal: create an intelligent agent that actually knows which approach to use for different query types, not just force everything through one paradigm.
 
-### The Core Question
+**P.S.** I love Test cricket, so naturally I built this around cricket data. 🏏
 
-**When should you use SQL vs Vector DB?**
+## How It Works
 
-This project answers by building a real system where:
-- **SQL** is best for structured queries and aggregations ("Who scored the most runs in 2024?")
-- **Vector DB** is best for semantic similarity search ("Find articles about Kohli's batting performance")
+```mermaid
+graph TD
+    A[User Question] --> B[LangGraph Agent]
+    B --> C{Analyze Query Type}
 
-## Why Cricket?
+    C -->|Stats Query| D[get_database_schema]
+    D --> E[execute_sql on DuckDB]
+    E --> F[Return Structured Results]
 
-Cricket provides the perfect use case:
-- Rich **structured data** (ball-by-ball stats, player records) → SQL
-- **News articles** requiring semantic search → Vector DB
-- Real-world scenarios that aren't artificially contrived
-- Complex enough to be interesting, focused enough to be manageable
+    C -->|News Query| G[search_chromadb]
+    G -->|Found Results| H[Return Articles]
+    G -->|No Results| I[query_cricket_articles]
+    I --> J[Fetch from GNews API]
+    J --> K[Auto-ingest to ChromaDB]
+    K --> L[search_chromadb again]
+    L --> H
 
-## Architecture Philosophy
+    F --> M[Agent Response with Reasoning]
+    H --> M
 
-### MCP (Model Context Protocol) Design
-- **Atomic tools**: Each tool does ONE thing well
-- **LLM orchestration**: The LLM intelligently chooses which tool to use
-- **Smart fallback**: System self-improves by auto-ingesting data when queries find nothing
+    style B fill:#e1f5ff
+    style C fill:#fff4e1
+    style E fill:#e8f5e9
+    style G fill:#f3e5f5
+    style I fill:#fff3e0
+```
 
-### Data Layer Strategy
-- **Bronze Layer**: Raw data, preserved exactly as received
-- **Silver Layer**: Cleaned, standardized for analytics
-- **Separation of concerns**: Data pipelines ≠ API tools
+The agent uses **MCP (Model Context Protocol)** tools - atomic functions that do one thing well. The LLM orchestrates which tools to call based on the query intent.
 
-## What's Implemented
+**Smart Fallback**: When searching for news that doesn't exist locally, the agent automatically fetches from GNews API, ingests to ChromaDB, and searches again. The system expands its knowledge base on-demand.
 
-### Data Sources
+### Why MCP Tools?
 
-**1. Cricket Statistics (SQL/DuckDB)**
-- Test cricket data (1877-2024) from Kaggle
-- Bronze/Silver transformation pipeline
-- 6 tables: players, matches, batting, bowling, fall_of_wickets, partnerships
-- DuckDB for OLAP-optimized analytics
+The atomic design makes it trivial to add new capabilities. Want to add **Knowledge Graphs**?
 
-**2. Cricket News (Vector DB/ChromaDB)**
-- GNews API integration for live cricket news
-- Sentence transformers for semantic embeddings (384-dim)
-- Metadata-rich storage for filtering
-- **ChromaDB for local experimentation** - can be swapped for more sophisticated vector databases (Pinecone, Weaviate, Qdrant) for production workloads
+1. Develop the tool → `kg_tools.py` with functions like `query_knowledge_graph()`
+2. Register it → Add to the MCP toolbox in `mcp_client.py`
+3. Update prompt → Tell the agent when to use KG
+4. Done → Agent automatically routes queries to the right stack
 
-### MCP Tools Available
+No refactoring. No breaking changes. Just add the new tool and let the LLM figure out when to use it.
 
-**Cricket News Tools:**
-- `search_chromadb` - Semantic search in vector database
-- `query_cricket_articles` - Fetch from GNews API + auto-ingest to ChromaDB
+This is how I'll be adding Knowledge Graph support next - the architecture makes experimentation easy.
 
-**Cricket Stats Tools:**
-- `get_database_schema` - Understand available tables and columns
-- `execute_sql` - Execute safe SQL queries (SELECT only, with injection protection)
-- `get_sample_queries` - Get example queries for learning
+## Quick Start
 
-### Smart Fallback Pattern
+```bash
+# Install
+pip install -e .
 
-LLM orchestrates the flow:
-1. Search ChromaDB for relevant articles
-2. If no results → Query GNews API → Auto-ingest to ChromaDB
-3. Search ChromaDB again → Return results
+# Setup environment
+cp .env.example .env
+# Add your OPENAI_API and GNEWS_API_KEY to .env
 
-The system **learns and expands** based on what users ask for.
+# Run (see notebooks/test_agent.ipynb)
+from cricket_intelligence import CricketAgent
 
-## Key Technical Decisions
+agent = CricketAgent()
+response = await agent.ask("Who scored the most runs in 2024?")
+```
 
-### Focus on Learning and Understanding
-- Code is **readable and educational**
-- Pre-aggregated datasets for faster iteration
-- Clear separation between data pipelines and API tools
+## Example Interactions
 
-### SQL Injection Protection
-- Uses `sqlparse` to analyze queries
-- Allows SELECT and WITH (CTEs)
-- Blocks all DML/DDL operations (INSERT, UPDATE, DELETE, DROP, etc.)
+### Stats Query → Text-to-SQL
+```
+Q: "Who are the top 5 run scorers in Test cricket history?"
 
-### Reusable Components
-- **Shared utilities**: `embedder.py`, `chromadb_manager.py`, `news_fetcher.py`
-- **Topic-agnostic where possible**: Easy to adapt for AI news, finance, etc.
-- **Domain-specific where needed**: Cricket-optimized for performance
+Agent Reasoning:
+→ This is a statistical query requiring aggregation
+→ Using execute_sql on DuckDB
 
-### Vector DB Flexibility
-- **Current**: ChromaDB for local development and experimentation
-- **Scalable**: Architecture supports swapping to other vector databases for enhanced performance and features
-- **Pluggable design**: Change vector DB without rewriting MCP tools
+SQL Generated:
+SELECT p.name, SUM(b.runs_scored) as total_runs
+FROM batting b
+JOIN players p ON b.player_id = p.player_id
+GROUP BY p.name
+ORDER BY total_runs DESC
+LIMIT 5
 
-## Learning Outcomes
+Results:
+1. Sachin Tendulkar - 15,921 runs
+2. Ricky Ponting - 13,378 runs
+...
+```
 
-By building this system, you learn:
+### News Query → Vector Search
+```
+Q: "What's happening with the Indian cricket team?"
 
-1. **When SQL is the right choice**: Structured queries, aggregations, reporting
-2. **When Vector DB shines**: Semantic similarity, fuzzy matching, content discovery
-3. **How to combine them**: LLM-orchestrated tool selection for intelligent querying
-4. **Data engineering fundamentals**: Bronze/Silver layers, schema design, ETL patterns
-5. **MCP architecture**: Building atomic tools that LLMs can orchestrate
-6. **Smart fallback patterns**: Self-improving systems that expand based on usage
+Agent Reasoning:
+→ Semantic search for recent news
+→ Using search_chromadb for vector similarity
 
-## Technology Stack
+Results:
+📰 "India wins series 3-1 against Australia"
+📰 "Rohit Sharma's captaincy praised by experts"
+...
+```
 
-- **MCP Server**: Python MCP SDK
-- **SQL Database**: DuckDB (OLAP-optimized, embedded)
-- **Vector Database**: ChromaDB (local experimentation, swappable)
-- **Embeddings**: all-MiniLM-L6-v2 (384-dim, fast)
-- **News API**: GNews API (free tier)
-- **SQL Parsing**: sqlparse for injection protection
-- **Data Processing**: pandas, PyYAML
+### Smart Fallback in Action
+```
+Q: "Tell me about Zimbabwe cricket"
 
-## Design Principles
+Agent Reasoning:
+→ Searching ChromaDB... no results found
+→ Triggering fallback: fetching from GNews API...
+→ Ingested 8 new articles to ChromaDB
+→ Searching again... found 8 articles
 
-1. **Learn by doing**: Real data, real queries, real problems
-2. **Keep it simple**: Educational and clear architecture
-3. **Optimize where it matters**: Domain-specific schemas for performance
-4. **Generalize what's common**: Reusable utilities across topics
-5. **Let the LLM orchestrate**: Tools are atomic, LLM is intelligent
-6. **Build for flexibility**: Easy to swap components as needs evolve
+Results:
+📰 "Zimbabwe upsets Pakistan in T20 series"
+...
+```
 
-## Why This Matters
+## Project Structure
 
-Most tutorials force you into one paradigm. This project shows:
-- **Not everything belongs in SQL** (semantic search is painful in SQL)
-- **Not everything belongs in Vector DB** (aggregations are awkward)
-- **Each has its strengths** - use the right tool for the right query
+```
+cricket-intelligence-system/
+├── src/cricket_intelligence/
+│   ├── agent/                  # LangGraph agent orchestration
+│   │   ├── cricket_agent.py   # Main agent
+│   │   └── mcp_client.py      # MCP tool integration
+│   ├── api/tools/              # MCP tools (atomic functions)
+│   │   ├── stats_tools.py     # Text-to-SQL tools
+│   │   └── news_tools.py      # Vector search + GNews
+│   ├── core/                   # Shared utilities
+│   │   ├── embeddings.py      # Sentence transformers
+│   │   ├── chromadb.py        # Vector DB operations
+│   │   └── news_client.py     # GNews API client
+│   ├── pipelines/              # ETL (Bronze → Silver)
+│   │   ├── stats/             # Cricket stats transformation
+│   │   └── news/              # News ingestion
+│   └── config.py              # Centralized settings
+└── tests/                      # unit/integration/e2e
+```
 
-**The right tool for the right job**, orchestrated intelligently by LLMs.
+## Data Sources
+
+**Cricket Stats** (Kaggle Test cricket dataset, 1877-2024)
+- Bronze: Raw CSVs preserved as-is
+- Silver: 6 normalized tables (players, matches, batting, bowling, partnerships, fall_of_wickets)
+- Storage: DuckDB for OLAP analytics
+
+**Cricket News** (GNews API)
+- Live cricket news fetched on-demand
+- Embedded with all-MiniLM-L6-v2 (384-dim)
+- Storage: ChromaDB with metadata (title, URL, date)
 
 ---
 
-Built to explore multi-modal data architectures through practical cricket analytics.
+**Experimenting with Text-to-SQL, Vector Search, and (soon) Knowledge Graphs to understand when to use which approach.**
